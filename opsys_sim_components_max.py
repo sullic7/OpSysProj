@@ -10,10 +10,11 @@ class SimulatorProcess:
         # <proc-num>|<arrival-time>|<burst-time>|<num-burst>|<io-time>|<memory>
         values = info_string.strip().split("|")
         self.proc_num = int(values[0])
-        self.burst_time = int(values[1])
-        self.num_bursts = int(values[2])
-        self.io_time = int(values[3])
-        self.memory_size = int(values[4])
+        self.arrival_time = int(values[1])
+        self.burst_time = int(values[2])
+        self.num_bursts = int(values[3])
+        self.io_time = int(values[4])
+        self.memory_size = int(values[5])
 
         # set up vars to track remaining time
         self.burst_time_remaining = self.burst_time
@@ -90,7 +91,7 @@ class CPU:
         self.ctx_switch_time_remaining = 0
         self.scheduling_algorithm = scheduling_algorithm
         self.round_robin_time_slice = round_robin_time_slice
-        self.time_elapased_in_RR_timeslice = 0
+        self.time_elapased_in_RR= 0
 
     def has_process(self):
         """Tells us if the CPU has a process"""
@@ -102,6 +103,9 @@ class CPU:
     def in_ctx_switch(self):
         return self.ctx_switch_time_remaining != 0
 
+    def finishing_round_robbin(self):
+        return self.round_robin_time_slice - self.time_elapased_in_RR
+
     def finish_ctx_switch(self):
         self.ctx_switch_time_remaining = 0
         return self.current_proc
@@ -112,7 +116,7 @@ class CPU:
             exit(1)
         self.current_proc = new_proc
         self.ctx_switch_time_remaining = context_switch_time
-        self.time_elapased_in_RR_timeslice = 0
+        self.time_elapased_in_RR = 0
 
     def get_time_till_next_event(self):
         if self.current_proc is None:
@@ -131,33 +135,20 @@ class CPU:
         if self.current_proc is None:
             return
 
-        # if(self.ctx_switch_time_remaining > 0):
-        #     if(self.ctx_switch_time_remaining > time_passed):
-        #         self.current_proc.burst_time_remaining -= self.ctx_switch_time_remaining
-        #         self.ctx_switch_time_remaining = 0
-        #         time_passed -= self.ctx_switch_time_remaining
-        #     else:
-        #         self.ctx_switch_time_remaining -= time_passed
+        # always bump the RR time, even if we're inside a ctx switch
+        self.time_elapased_in_RR += time_passed
 
-        # switched from above code to below code
-        # I think that the above code worked because time_passed will
-        # be == to ctx_switch_time_remaining whenever the next thing to do
-        # is a ctx switch
         if(self.ctx_switch_time_remaining > 0):
             if(self.ctx_switch_time_remaining < time_passed):
-
-                self.current_proc.burst_time_remaining -= self.ctx_switch_time_remaining
                 time_passed -= self.ctx_switch_time_remaining
-                self.ctx_switch_time_remaining = 0
-                # finish the ctx switch and take the rest out of burst time
                 self.current_proc.burst_time_remaining -= time_passed
-                self.round_robin_time_slice -= time_passed
+                self.ctx_switch_time_remaining = 0
+                
             else:
                 self.ctx_switch_time_remaining -= time_passed
 
         if(self.ctx_switch_time_remaining == 0):
             self.current_proc.burst_time_remaining -= time_passed
-            self.round_robin_time_slice -= time_passed
 
         # maybe don't let these go below 0, maybe ignore it and use
         # <= when checking it. Not sure what's the best
@@ -179,19 +170,11 @@ class CPU:
         proc.burst_time_remaining = proc.burst_time
         return proc
 
-def feed_cpu(time, cpu, io_subsystem):
-    # get the next process from the queue
-    proc = process_queue.pop(0)
-    # add context switch time
-    time += context_switch_time
-    # print the event
-    print_event(time, proc, "started using the CPU", process_queue)
-    # and feed it to the cpu
-    cpu.add_process(proc)
 
 class ProcessQueue(list):
     def __init__(self, scheduling_algorithm):
         self.scheduling_algo = scheduling_algorithm
+        self.total_time_passed = 0
 
     def add_proc(self, proc):
         # TODO change the sorting in the sim method to be in here
@@ -211,6 +194,7 @@ class ProcessQueue(list):
     def update_time(self, time_passed):
         """IN the PWA algorithm if a proc has been waiting in the queue for
         longer than x3 it's burst time increase it's priority by 1"""
+        self.total_time_passed += time_passed
         for proc in self:
             # first add the time passed to all the procs
             proc.time_waiting_in_queue += time_passed
@@ -227,23 +211,17 @@ class ProcessQueue(list):
         self.sort_by_scheduling_algo()
 
     def get_time_till_next_event(self):
-        """get the time remaining till the next priority change. If
-        there's nothing on the queue return None"""
+        """ Get the time till the next process enters the queue"""
 
-        # TODO: make this fire if a new process is about to enter the queue
-        # a new process could result in a memory defrag
-
-        if len(self) == 0 or self.scheduling_algo != "PWA":
+        if len(self) == 0:
             return None
-        time_till_next_event = self[0].burst_time * 3 - self[0].time_waiting_in_queue
-        for i in range(1, len(self)):
-            time_till_next_event = min(self[i].burst_time * 3 - self[i].time_waiting_in_queue,
-                                        time_till_next_event)
 
-        # this is a bit of a hack
-        if time_till_next_event > 0:
-            return time_till_next_event
-        else:
-            return None
+        # make a copy of the process list and sort it by arrival time
+        sorted_by_arrival_time_list = sorted(list, key=lambda x: x.)
+
+        # find the process with the arrival time
+        for process in sorted(self
+
+        self.total_time_passed
 
 
