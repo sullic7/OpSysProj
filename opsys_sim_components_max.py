@@ -103,6 +103,9 @@ class CPU:
         return self.ctx_switch_time_remaining != 0
 
     def finishing_round_robin(self):
+        if self.scheduling_algorithm != "RR":
+            return False
+
         RR_time_left = self.round_robin_time_slice - self.time_elapased_in_RR
         # if we are going to finish a CPU burst before the RR time slice
         # expires we want to return false, otherwise if the next CPU related
