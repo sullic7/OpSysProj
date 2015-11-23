@@ -2,7 +2,8 @@ import sys
 # methods
 # import opsys_sim_components import feed_cpu, sort_queue_by_schedule
 # classes
-from opsys_sim_components_max import SimulatorProcess, IOSubsystem, CPU, ProcessQueue
+from opsys_sim_components_max import SimulatorProcess, IOSubsystem, CPU, \
+ProcessQueue, FutureProcessQueue
 # this is a program to simulate a CPU and IO black box for CSCI 4210
 
 context_switch_time = 13
@@ -33,12 +34,17 @@ def print_event(time, proc, event, queue):
     print("time %dms: P%d %s %s" % (time, proc.proc_num, event, queue_string))
 
 def execute_premption(time, process_queue, cpu, scheduling_algo):
+    # TODO: if we RR preempt a process and there's nothing in the queue
+    # we don't do a ctx_switch because we're not really preempting
+
+
     # take the proc out of the cpu and add a new one from the queue
     old_proc = cpu.preempt_process()
     new_proc = process_queue.pop(0)
     cpu.add_process(new_proc)
     # add the old proc back to the queue and sort it
     process_queue.add_proc(old_proc)
+
     # little sketchy here for quickness
     event_string = "preempted by P%d" % new_proc.proc_num
     print_event(time, old_proc, event_string, process_queue)
@@ -50,19 +56,12 @@ def check_for_premption(time, process_queue, cpu, scheduling_algo):
         # lowest remaining time wins
         if cpu.get_current_process().burst_time_remaining > \
                 process_queue[0].burst_time_remaining:
-            execute_premption(time, process_queue, cpu, scheduling_algo)
-            return True
-
-    if scheduling_algo == "PWA" and len(process_queue) > 0:
-        # lowest priority wins
-        if cpu.get_current_process().priority > process_queue[0].priority:
-            execute_premption(time, process_queue, cpu, scheduling_algo)
             return True
 
     return False
 
 
-def run_simulation(process_queue, io_subsystem, cpu, scheduling_algo):
+def run_simulation(future_queue, process_queue, io_subsystem, cpu, scheduling_algo):
     time = 0
     print("time 0ms: Simulator started for %s %s" % 
         (scheduling_algo, get_queue_print_string(process_queue)))
@@ -73,34 +72,30 @@ def run_simulation(process_queue, io_subsystem, cpu, scheduling_algo):
 
         #first check if the CPU is empty, IT MUST BE FEED
         if (not cpu.has_process() and len(process_queue) != 0):
-            # feed the CPU a process (no time taken yet)
             # get the next process from the queue
             proc = process_queue.pop(0)
             # and feed it to the cpu
             cpu.add_process(proc)
 
-        # if there was a preemption go to next loop
+        # if there was a preemption execute it and go to next loop
+        # this function also executes the preemption if needed
         if check_for_premption(time, process_queue, cpu, scheduling_algo):
+            execute_premption(time, process_queue, cpu, scheduling_algo)
             continue
+
 
         # now check what's going to finish next and give it attention
         time_left_on_cpu = cpu.get_time_till_next_event()
         time_left_on_io = io_subsystem.get_time_till_next_event()
-        time_left_on_process_queue = process_queue.get_time_till_next_event()
-        # print("times cpu, io, queue", time_left_on_cpu, time_left_on_io, time_left_on_process_queue)
+        time_till_next_new_proc = future_queue.get_time_till_next_event()
+        # print("times cpu, io, queue", time_left_on_cpu, time_left_on_io, time_till_next_new_proc)
 
-        # check if we need to age a process first
-        if (time_left_on_process_queue is not None and
-            (time_left_on_cpu is None or time_left_on_process_queue < time_left_on_cpu) and
-            (time_left_on_io is None or time_left_on_process_queue < time_left_on_io)):
-
-            # print("aging processes in queue")
-            time_passed = time_left_on_process_queue
-            time += time_passed
-            cpu.update_time(time_passed)
-            io_subsystem.update_time(time_passed)
-            process_queue.update_time(time_passed)
-            # go to the next loop
+        # check if we need to add a new process
+        if (time_till_next_new_proc is not None and
+            (time_left_on_cpu is None or time_till_next_new_proc < time_left_on_cpu) and
+            (time_left_on_io is None or time_till_next_new_proc < time_left_on_io)):
+            # TODO: add entering a process into memory and the process queue here
+            
             continue
 
         # we don't need to age a process, check if we need to do CPU stuff
@@ -115,6 +110,13 @@ def run_simulation(process_queue, io_subsystem, cpu, scheduling_algo):
             if(cpu.in_ctx_switch()):
                 proc = cpu.finish_ctx_switch()
                 print_event(time, proc, "started using the CPU", process_queue)
+            elif(cpu.finishing_round_robbin()):
+                time_passed = cpu.time_till_round_robbin_done()
+                # CPU is finishing round robbin
+                # preempt the proc in the cpu with the next one on the queue
+                # then put the process back into the queue
+
+
             else:
                 # cpu is ready now to feed io a process
                 proc = cpu.get_and_clear_process()
@@ -155,18 +157,29 @@ if __name__ == "__main__":
     #     print("Usage %s filename" % sys.argv[0])
 
     
-    scheduling_algorithms = ["FCFS", "RR"]
+    scheduling_algorithms = ["SRT", "RR"]
 
     for algo in scheduling_algorithms:
-        # process_queue = load_processes(sys.argv[1])
-        # create a new ProcessQueue and add all the loaded processes to it
+        future_queue = FutureProcessQueue()
+        # create a new FutureProcessQueue and add all the loaded processes to it
+        future_queue.extend(load_processes("input_file.txt"))
+        # future_queue.extend(load_processes(sys.argv[1]))
+
+        # sort the future queue by arrivial time
+        future_queue.sort(key=lambda x: x.arrivial_time)
+        # get all the time=0 events from the future queue into the process queue
         process_queue = ProcessQueue(algo)
-        process_queue.extend(load_processes("input_file.txt"))
+        while(future_queue.get_time_till_next_proc_enters() == 0):
+            process_queue.extend(future_queue.get_and_clear_next_proc())
+
+        process_queue
         process_queue.sort_by_scheduling_algo()
+        
 
         # print("Process order for %s\n" % algo)
         # for proc in process_queue:
         #     proc.print_self()
+
         io_subsystem = IOSubsystem()
         cpu = CPU(algo)
-        run_simulation(process_queue, io_subsystem, cpu, algo)
+        run_simulation(future_queue, process_queue, io_subsystem, cpu, algo)

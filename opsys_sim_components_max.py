@@ -18,7 +18,6 @@ class SimulatorProcess:
 
         # set up vars to track remaining time
         self.burst_time_remaining = self.burst_time
-        self.time_waiting_in_queue = 0
 
         # set up analytic variables
         self.bursts_compleated = 0
@@ -177,8 +176,6 @@ class ProcessQueue(list):
         self.total_time_passed = 0
 
     def add_proc(self, proc):
-        # TODO change the sorting in the sim method to be in here
-        proc.time_waiting_in_queue = 0
         self.append(proc)
         self.sort_by_scheduling_algo()
 
@@ -188,40 +185,32 @@ class ProcessQueue(list):
             pass
         elif self.scheduling_algo == "SRT":
             self.sort(key=lambda x: x.burst_time)
-        elif self.scheduling_algo == "PWA":
-            self.sort(key=lambda x: x.priority)
 
-    def update_time(self, time_passed):
-        """IN the PWA algorithm if a proc has been waiting in the queue for
-        longer than x3 it's burst time increase it's priority by 1"""
-        self.total_time_passed += time_passed
-        for proc in self:
-            # first add the time passed to all the procs
-            proc.time_waiting_in_queue += time_passed
 
-            if proc.time_waiting_in_queue >= proc.burst_time * 3:
-                # don't go past max priority
-                if proc.priority > 0:
-                    proc.priority -= 1
-                    proc.time_waiting_in_queue = 0
-                    # print("proc P%d aged to priority %d" % 
-                    #     (proc.proc_num, proc.priority))
+class FutureProcessQueue(list):
+    """ Hold a list of processes and have functions to give them
+    out to the rest of the simulation when the should enter the system.
+    """
+    def __init__(self):
+        self.total_time_passed = 0
 
-        # things may have changed, resort
-        self.sort_by_scheduling_algo()
+    def get_and_clear_next_proc(self):
+        """ Get the next process that's going to enter the system
+        and remove it from the future queue.
+        """
+        proc = self[0]
+        self.pop(0)
+        return proc
 
-    def get_time_till_next_event(self):
-        """ Get the time till the next process enters the queue"""
-
+    def get_time_till_next_proc_enters(self):
         if len(self) == 0:
             return None
+        # Return how many ms in the future the next process will
+        # arrive in.
+        return self[0].arrival_time - self.total_time_passed
 
-        # make a copy of the process list and sort it by arrival time
-        sorted_by_arrival_time_list = sorted(list, key=lambda x: x.)
+    def update_time(self, time_passed):
+        self.total_time_passed += time_passed
 
-        # find the process with the arrival time
-        for process in sorted(self
-
-        self.total_time_passed
 
 
