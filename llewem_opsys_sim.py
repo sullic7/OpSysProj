@@ -149,6 +149,7 @@ def run_simulation(future_queue, process_queue, io_subsystem, cpu, scheduling_al
                 else:
                     # this process terminates now without IO
                     print_event(time, proc, "terminated", process_queue)
+                    memory.remove_process(proc)
 
         elif(time_left_on_io is not None):
             time_passed = time_left_on_io
