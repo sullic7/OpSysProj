@@ -44,11 +44,6 @@ def RR(t_cs, t_slice, queue, avg_burst_time):
     CPU.iscontextswitch = True
 
     mem = Memory()
-    for i in range(10):
-        mem.mem[5+i] = "B"
-    mem.show()
-    mem.defrag()
-    mem.show()
 
     terminated = 0
     IO = {}
@@ -125,6 +120,13 @@ def RR(t_cs, t_slice, queue, avg_burst_time):
             queue.insert(0,temp)
 
         t+=1
+
+    for i in range(10):
+        mem.mem[i] = "B"
+        mem.mem[20+i] = "C"
+    mem.show()
+    mem.defrag()
+    mem.show()
 
     avg_wait = wait/float(tot_cs)
     avg_turnaround = turnaround/float(num_turnaround)
