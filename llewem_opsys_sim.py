@@ -165,6 +165,7 @@ def run_simulation(future_queue, process_queue, io_subsystem, cpu, scheduling_al
                 print_event(time, proc, "completed I/O", process_queue)
             else:
                 print_event(time, proc, "terminated", process_queue)
+                memory.remove_process(proc)
 
     print("time %dms: Simulator for %s ended\n\n" % (time, scheduling_algo))
 

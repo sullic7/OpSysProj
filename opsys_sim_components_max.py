@@ -260,6 +260,10 @@ class Memory(object):
         """ Defragment memory and report how long it took."""
         pass
 
+    def remove_process(self, process):
+        """ Remove the given process from memory. """
+        pass
+
     def show(self):
         line = '=' * 32
         print line
