@@ -265,6 +265,8 @@ class Memory(object):
             self.mem[i] = "."
 
     def defrag(self):
+        #NOTE: add t_memmove = 10
+
         i = 0
         j = 0
         while(self.mem[i]=="."):
@@ -276,5 +278,19 @@ class Memory(object):
                 self.mem[i] = "."
                 j+=1
 
-    #def next_fit(self, proc):
+#add proc.mem_index
+    def run_fit_algorithm(self, proc, fit_type):
+        size = proc.memory_size
+        #proc.proc_num
+        i = 0
+        j = 0
+        while(self.mem[i]!="."):
+            i+=1
+        j=i
 
+        if(fit_type=="First"):
+            
+            
+
+        if(fit_type=="Next"):
+            size = proc.memory_size
