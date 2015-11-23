@@ -34,10 +34,6 @@ def print_event(time, proc, event, queue):
     print("time %dms: P%d %s %s" % (time, proc.proc_num, event, queue_string))
 
 def execute_premption(time, process_queue, cpu):
-    # TODO: if we RR preempt a process and there's nothing in the queue
-    # we don't do a ctx_switch because we're not really preempting
-
-
     # take the proc out of the cpu and add a new one from the queue
     old_proc = cpu.preempt_process()
     new_proc = process_queue.pop(0)
@@ -95,7 +91,26 @@ def run_simulation(future_queue, process_queue, io_subsystem, cpu, scheduling_al
             (time_left_on_cpu is None or time_till_next_new_proc < time_left_on_cpu) and
             (time_left_on_io is None or time_till_next_new_proc < time_left_on_io)):
             # TODO: add entering a process into memory and the process queue here
-            
+            # if a new proc is entering and requires defrag update
+            proc = future_queue.get_and_clear_next_proc()
+            process_queue.add_proc(proc) # for now ignore memory for testing
+
+            # TODO: make this pseudocode real code 
+            # if CAN_FIT_IN_MEM_WITHOUT_DEFRAG:
+            #     process_queue.add_proc(proc)
+            #     # ADD TO MEM
+            # else:
+            #     time_passed = TIME_IT_TAKES_TO_DEFRAG
+            #     time += time_passed
+            #     io_subsystem.update_time(time_passed)
+            #     future_queue.update_time(time_passed)
+            #     if CAN_FIT_IN_MEM_WITHOUT_DEFRAG:
+            #         process_queue.add_proc(proc)
+            #         # ADD TO MEM
+            #     else:
+            #         print("""I tried to defrag my memory and I still couldn't
+            #                 fit the process. I'm going to throw it away as per
+            #                 The G Man's instructions in class.""")
             continue
 
         # we don't need to age a process, check if we need to do CPU stuff
@@ -176,9 +191,9 @@ if __name__ == "__main__":
         # get all the time=0 events from the future queue into the process queue
         process_queue = ProcessQueue(algo)
         while(future_queue.get_time_till_next_proc_enters() == 0):
-            process_queue.extend(future_queue.get_and_clear_next_proc())
-
-        process_queue.sort_by_scheduling_algo()
+            next_proc = future_queue.get_and_clear_next_proc()
+            # TODO, put that next_proc in memory as well!!
+            process_queue.add_proc(next_proc)
         
 
         # print("Process order for %s\n" % algo)

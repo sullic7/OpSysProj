@@ -138,7 +138,6 @@ class CPU:
         if self.current_proc is None:
             return None
 
-        # TODO: check for RR time expiring
         RR_time_remaining = self.time_till_round_robin_done()
 
         if(self.ctx_switch_time_remaining > 0):
