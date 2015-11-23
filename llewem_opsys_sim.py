@@ -57,7 +57,7 @@ def check_for_premption(time, process_queue, cpu, scheduling_algo):
     return False
 
 
-def run_simulation(future_queue, process_queue, io_subsystem, cpu, scheduling_algo):
+def run_simulation(future_queue, process_queue, io_subsystem, cpu, scheduling_algo, memory):
     time = 0
     print("time 0ms: Simulator started for %s %s" % 
         (scheduling_algo, get_queue_print_string(process_queue)))
@@ -84,7 +84,7 @@ def run_simulation(future_queue, process_queue, io_subsystem, cpu, scheduling_al
         time_left_on_cpu = cpu.get_time_till_next_event()
         time_left_on_io = io_subsystem.get_time_till_next_event()
         time_till_next_new_proc = future_queue.get_time_till_next_event()
-        # print("times cpu, io, queue", time_left_on_cpu, time_left_on_io, time_till_next_new_proc)
+        # print("times cpu, io, future queue", time_left_on_cpu, time_left_on_io, time_till_next_new_proc)
 
         # check if we need to add a new process
         if (time_till_next_new_proc is not None and
@@ -93,24 +93,23 @@ def run_simulation(future_queue, process_queue, io_subsystem, cpu, scheduling_al
             # TODO: add entering a process into memory and the process queue here
             # if a new proc is entering and requires defrag update
             proc = future_queue.get_and_clear_next_proc()
-            process_queue.add_proc(proc) # for now ignore memory for testing
+            # process_queue.add_proc(proc) # for now ignore memory for testing
 
-            # TODO: make this pseudocode real code 
-            # if CAN_FIT_IN_MEM_WITHOUT_DEFRAG:
-            #     process_queue.add_proc(proc)
-            #     # ADD TO MEM
-            # else:
-            #     time_passed = TIME_IT_TAKES_TO_DEFRAG
-            #     time += time_passed
-            #     io_subsystem.update_time(time_passed)
-            #     future_queue.update_time(time_passed)
-            #     if CAN_FIT_IN_MEM_WITHOUT_DEFRAG:
-            #         process_queue.add_proc(proc)
-            #         # ADD TO MEM
-            #     else:
-            #         print("""I tried to defrag my memory and I still couldn't
-            #                 fit the process. I'm going to throw it away as per
-            #                 The G Man's instructions in class.""")
+            if memory.can_fit_process_without_defrag(proc):
+                process_queue.add_proc(proc)
+                memory.add_process(proc)
+            else:
+                time_passed = memory.do_defrag_and_report_time()
+                time += time_passed
+                io_subsystem.update_time(time_passed)
+                future_queue.update_time(time_passed)
+                if memory.can_fit_process_without_defrag(proc):
+                    process_queue.add_proc(proc)
+                    memory.add_process(proc)
+                else:
+                    print("""I tried to defrag my memory and I still couldn't
+                            fit the process. I'm going to throw it away as per
+                            The G Man's instructions in class.""")
             continue
 
         # we don't need to age a process, check if we need to do CPU stuff
@@ -179,27 +178,32 @@ if __name__ == "__main__":
 
     
     scheduling_algorithms = ["SRT", "RR"]
+    fitting_algorithms = ['first-fit', 'next-fit', 'best-fit']
 
-    for algo in scheduling_algorithms:
-        future_queue = FutureProcessQueue()
-        # create a new FutureProcessQueue and add all the loaded processes to it
-        future_queue.extend(load_processes("input_file.txt"))
-        # future_queue.extend(load_processes(sys.argv[1]))
+    for schedule_algo in scheduling_algorithms:
+        for fit_algo in fitting_algorithms:
+            future_queue = FutureProcessQueue()
+            # create a new FutureProcessQueue and add all the loaded processes to it
+            future_queue.extend(load_processes("input_file.txt"))
+            # future_queue.extend(load_processes(sys.argv[1]))
 
-        # sort the future queue by arrivial time
-        future_queue.sort(key=lambda x: x.arrivial_time)
-        # get all the time=0 events from the future queue into the process queue
-        process_queue = ProcessQueue(algo)
-        while(future_queue.get_time_till_next_proc_enters() == 0):
-            next_proc = future_queue.get_and_clear_next_proc()
-            # TODO, put that next_proc in memory as well!!
-            process_queue.add_proc(next_proc)
-        
+            # sort the future queue by arrivial time
+            future_queue.sort(key=lambda x: x.arrivial_time)
+            # get all the time=0 events from the future queue into the process queue
+            process_queue = ProcessQueue(schedule_algo)
+            memory = Memory(fit_algo)
+            while(future_queue.get_time_till_next_proc_enters() == 0):
+                next_proc = future_queue.get_and_clear_next_proc()
+                memory.add_process(proc)
+                # TODO: check for errors loading the proc into memory
+                process_queue.add_proc(next_proc)
+            
 
-        # print("Process order for %s\n" % algo)
-        # for proc in process_queue:
-        #     proc.print_self()
+            # print("Process order for %s\n" % algo)
+            # for proc in process_queue:
+            #     proc.print_self()
 
-        io_subsystem = IOSubsystem()
-        cpu = CPU(algo)
-        run_simulation(future_queue, process_queue, io_subsystem, cpu, algo)
+            io_subsystem = IOSubsystem()
+            cpu = CPU(schedule_algo)
+
+            run_simulation(future_queue, process_queue, io_subsystem, cpu, algo, memory)
