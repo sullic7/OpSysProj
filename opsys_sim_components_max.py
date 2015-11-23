@@ -213,4 +213,35 @@ class FutureProcessQueue(list):
         self.total_time_passed += time_passed
 
 
+class Memory(object):
+    def __init__(self):
+        self.size = 256
+        self.mem = []
+        for i in range(self.size):
+            self.mem.append(".")
+
+    def show(self):
+        line = '=' * 32
+        print line
+        for i in range(self.size/32):
+            print ''.join(self.mem[32*i:32*(i+1)])
+        print line
+
+    def clear(self):
+        for i in range(self.size):
+            self.mem[i] = "."
+
+    def defrag(self):
+        i = 0
+        j = 0
+        while(self.mem[i]=="."):
+            i+=1
+        while(i < self.size-1):
+            i+=1
+            if(self.mem[i]!="."):
+                self.mem[j] = self.mem[i]
+                self.mem[i] = "."
+                j+=1
+
+    #def next_fit(self, proc):
 
