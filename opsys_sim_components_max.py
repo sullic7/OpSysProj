@@ -234,11 +234,31 @@ class FutureProcessQueue(list):
 
 
 class Memory(object):
-    def __init__(self):
+    def __init__(self, fitting_algorithm):
+        self.fitting_algorithm = fitting_algorithm
         self.size = 256
         self.mem = []
         for i in range(self.size):
             self.mem.append(".")
+
+    def can_fit_process_without_defrag(self, new_proc):
+        """ This will return True if new_proc can fit into memory without
+        a defrag."""
+        pass
+
+
+
+    def add_process(self, new_proc):
+        """ Add a new process to memory.
+        This assumes the process can fit (because 
+        can_fit_process_without_defrag should have been called before)
+        and should error out if there's a problem.
+        """
+        pass
+
+    def do_defrag_and_report_time(self):
+        """ Defragment memory and report how long it took."""
+        pass
 
     def show(self):
         line = '=' * 32
