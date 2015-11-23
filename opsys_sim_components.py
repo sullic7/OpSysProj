@@ -67,14 +67,11 @@ class Memory(object):
     def defrag(self):
         i = 0
         j = 0
-        while(i < self.size):
-            if(self.mem[i]=="."):
-                j = i
-                i+=1
-                while(self.mem[i] != "."):
-                    i+=1
-                if(self.mem[i]!="."):
-                    self.mem[j] = self.mem[i]
-                    self.mem[i] = "."
+        while(self.mem[i]=="."):
             i+=1
-            j+=1
+        while(i < self.size-1):
+            i+=1
+            if(self.mem[i]!="."):
+                self.mem[j] = self.mem[i]
+                self.mem[i] = "."
+                j+=1

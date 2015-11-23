@@ -122,7 +122,8 @@ def RR(t_cs, t_slice, queue, avg_burst_time):
         t+=1
 
     for i in range(10):
-        mem.mem[5+i] = "B"
+        mem.mem[i] = "B"
+        mem.mem[20+i] = "C"
     mem.show()
     mem.defrag()
     mem.show()
