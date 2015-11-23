@@ -260,6 +260,10 @@ class Memory(object):
         #NOTE: t_memmove = 10*mem_moved
         pass
 
+    def remove_process(self, process):
+        """ Remove the given process from memory. """
+        pass
+
     def show(self):
         line = '=' * 32
         print line
