@@ -71,7 +71,8 @@ class Memory(object):
             if(self.mem[i]=="."):
                 j = i
                 i+=1
-                for self.mem[i] != ".":
+                while(self.mem[i] != "."):
+                    i+=1
                 if(self.mem[i]!="."):
                     self.mem[j] = self.mem[i]
                     self.mem[i] = "."
