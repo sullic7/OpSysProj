@@ -19,20 +19,20 @@ def output(t, current, outstr, queue):
     else:
         print "time %dms: Process '%s' %s [Q %s]" % (t, current, outstr, str(queue).strip('[]').replace(',',''))
 
-def output_to_file(algo, avg_burstt, waitt, turnaroundt, tot_cs):
+def output_to_file(algo, avg_burst_time, wait_time, turnaround_time, total_cs):
     outfile = open("simout.txt", 'a')
     outfile.write("Algorithm %s\n" % algo)
-    outfile.write("-- average CPU burst time: %.2f ms\n" % avg_burstt)
-    outfile.write("-- average wait time: %.2f ms\n" % waitt)
-    outfile.write("-- average turnaround time: %.2f ms\n" % turnaroundt)
-    outfile.write("-- total number of context switches: %d\n\n" % tot_cs)
+    outfile.write("-- average CPU burst time: %.2f ms\n" % avg_burst_time)
+    outfile.write("-- average wait time: %.2f ms\n" % wait_time)
+    outfile.write("-- average turnaround time: %.2f ms\n" % turnaround_time)
+    outfile.write("-- total number of context switches: %d\n\n" % total_cs)
     outfile.close()
 
 def resetproc(procqueue):
     for p in procqueue:
         p.reset()
 
-def RR(t_cs, t_slice, queue, avg_burstt):
+def RR(t_cs, t_slice, queue, avg_burst_time):
     tot_proc = len(queue)   #total number of processes
     t = 0                   #elapsed time (ms)
     tot_cs = 0              #total number of context switches
@@ -129,9 +129,9 @@ def RR(t_cs, t_slice, queue, avg_burstt):
 
     avg_wait = wait/float(tot_cs)
     avg_turnaround = turnaround/float(num_turnaround)
-    output_to_file("RR", avg_burstt, avg_wait, avg_turnaround, tot_cs)
+    output_to_file("RR", avg_burst_time, avg_wait, avg_turnaround, tot_cs)
 
-def SRT(t_cs, readqueue, avg_burstt):
+def SRT(t_cs, readqueue, avg_burst_time):
     queue = sorted(readqueue, key = lambda x: x.burstt)
     tot_proc = len(queue)
     tot_bursts = 0
@@ -218,7 +218,7 @@ def SRT(t_cs, readqueue, avg_burstt):
         t+=1
     avg_wait = wait/float(tot_bursts)
     avg_turnaround = turnaround/float(tot_bursts)
-    output_to_file("SRT", avg_burstt, avg_wait, avg_turnaround, tot_cs)
+    output_to_file("SRT", avg_burst_time, avg_wait, avg_turnaround, tot_cs)
 
 if __name__ == "__main__":
     #read file
@@ -234,19 +234,23 @@ if __name__ == "__main__":
     readqueue = readfile(myfile)
     
     t_cs = 13 #time (ms) it takes to perform a context switch
-    tot_burstt = 0
-    num = 0
-    for q in readqueue:
-        tot_burstt += q.burstt*q.const_numburst
-        num+=q.const_numburst
-    avg_burstt = tot_burstt/float(num)
+    toalt_burst_time = 0
+    num_procs = 0
+    for process in readqueue:
+        toalt_burst_time += process.burstt * process.const_numburst
+        num_procs += process.const_numburst
+    avg_burst_time = toalt_burst_time / float(num_procs)
 
     #Round-Robin
     t_slice = 80
+    # make a copy of the process queue we read in and do round robin on it
     queue = list(readqueue)
-    RR(t_cs, t_slice, queue, avg_burstt)
+    RR(t_cs, t_slice, queue, avg_burst_time)
 
     #SRT
+    # reset all the info in the process objects for the next run
     resetproc(readqueue)
+    # make a copy of the process queue we read in and do shortest
+    # remaining time on it
     queue = list(readqueue)
-    #SRT(t_cs, queue, avg_burstt)
+    #SRT(t_cs, queue, avg_burst_time)
