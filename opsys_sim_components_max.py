@@ -237,6 +237,7 @@ class Memory(object):
     def __init__(self, fitting_algorithm):
         self.fitting_algorithm = fitting_algorithm
         self.size = 256
+        self.t_memmove = 10
         self.mem = []
         for i in range(self.size):
             self.mem.append(".")
@@ -245,8 +246,6 @@ class Memory(object):
         """ This will return True if new_proc can fit into memory without
         a defrag."""
         pass
-
-
 
     def add_process(self, new_proc):
         """ Add a new process to memory.
@@ -258,6 +257,7 @@ class Memory(object):
 
     def do_defrag_and_report_time(self):
         """ Defragment memory and report how long it took."""
+        #NOTE: t_memmove = 10*mem_moved
         pass
 
     def show(self):
@@ -272,8 +272,6 @@ class Memory(object):
             self.mem[i] = "."
 
     def defrag(self):
-        #NOTE: add t_memmove = 10
-
         i = 0
         j = 0
         while(self.mem[i]=="."):
