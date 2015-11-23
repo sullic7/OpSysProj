@@ -102,8 +102,25 @@ class CPU:
     def in_ctx_switch(self):
         return self.ctx_switch_time_remaining != 0
 
-    def finishing_round_robbin(self):
+    def finishing_round_robin(self):
+        RR_time_left = self.round_robin_time_slice - self.time_elapased_in_RR
+        # if we are going to finish a CPU burst before the RR time slice
+        # expires we want to return false, otherwise if the next CPU related
+        # thing to happen will be finishing a RR time slice return true.
+        return self.current_proc.burst_time_remaining < RR_time_left
+
+    def time_till_round_robin_done(self):
         return self.round_robin_time_slice - self.time_elapased_in_RR
+
+    def finish_round_robin(self):
+        RR_time_left = self.round_robin_time_slice - self.time_elapased_in_RR
+        self.current_proc.burst_time_remaining -= RR_time_left
+        # is redundant but just be to be safe
+        self.time_elapased_in_RR = 0
+        proc = self.current_proc
+        self.current_proc = None
+        return proc
+
 
     def finish_ctx_switch(self):
         self.ctx_switch_time_remaining = 0
@@ -121,13 +138,16 @@ class CPU:
         if self.current_proc is None:
             return None
 
-
         # TODO: check for RR time expiring
+        RR_time_remaining = self.time_till_round_robin_done()
 
         if(self.ctx_switch_time_remaining > 0):
             return self.ctx_switch_time_remaining
-        elif(self.current_proc.burst_time_remaining > 0):
-            return self.current_proc.burst_time_remaining
+        else:
+            # return the time till the burst is finished, or RR time expires
+            # whichever will happen first
+            return min(self.current_proc.burst_time_remaining, 
+                        RR_time_remaining)
 
     def update_time(self, time_passed):
         # no process means we don't care about time
@@ -198,9 +218,7 @@ class FutureProcessQueue(list):
         """ Get the next process that's going to enter the system
         and remove it from the future queue.
         """
-        proc = self[0]
-        self.pop(0)
-        return proc
+        return self.pop(0)
 
     def get_time_till_next_proc_enters(self):
         if len(self) == 0:

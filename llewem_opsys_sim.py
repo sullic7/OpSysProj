@@ -33,7 +33,7 @@ def print_event(time, proc, event, queue):
     queue_string = get_queue_print_string(queue)
     print("time %dms: P%d %s %s" % (time, proc.proc_num, event, queue_string))
 
-def execute_premption(time, process_queue, cpu, scheduling_algo):
+def execute_premption(time, process_queue, cpu):
     # TODO: if we RR preempt a process and there's nothing in the queue
     # we don't do a ctx_switch because we're not really preempting
 
@@ -80,7 +80,7 @@ def run_simulation(future_queue, process_queue, io_subsystem, cpu, scheduling_al
         # if there was a preemption execute it and go to next loop
         # this function also executes the preemption if needed
         if check_for_premption(time, process_queue, cpu, scheduling_algo):
-            execute_premption(time, process_queue, cpu, scheduling_algo)
+            execute_premption(time, process_queue, cpu)
             continue
 
 
@@ -104,18 +104,24 @@ def run_simulation(future_queue, process_queue, io_subsystem, cpu, scheduling_al
             time_passed = time_left_on_cpu
             time += time_passed
             io_subsystem.update_time(time_passed)
-            process_queue.update_time(time_passed)
+            future_queue.update_time(time_passed)
 
             # cpu is done first either finish a ctx switch or dump to IO
             if(cpu.in_ctx_switch()):
                 proc = cpu.finish_ctx_switch()
                 print_event(time, proc, "started using the CPU", process_queue)
-            elif(cpu.finishing_round_robbin()):
-                time_passed = cpu.time_till_round_robbin_done()
+
+            elif(cpu.finishing_round_robin()):
                 # CPU is finishing round robbin
                 # preempt the proc in the cpu with the next one on the queue
                 # then put the process back into the queue
+                old_proc = cpu.finish_round_robin()
+                new_proc = process_queue.pop(0)
+                cpu.add_process(new_proc)
+                process_queue.add_proc(old_proc)
 
+                event_string = "preempted by P%d" % new_proc.proc_num
+                print_event(time, old_proc, event_string, process_queue)
 
             else:
                 # cpu is ready now to feed io a process
@@ -135,7 +141,7 @@ def run_simulation(future_queue, process_queue, io_subsystem, cpu, scheduling_al
             time += time_passed
             cpu.update_time(time_passed)
             io_subsystem.update_time(time_passed)
-            process_queue.update_time(time_passed)
+            future_queue.update_time(time_passed)
             # io is done now so feed the queue
             proc = io_subsystem.get_and_clear_next_process()
             # feed the proc back to the process_queue if needed
@@ -172,7 +178,6 @@ if __name__ == "__main__":
         while(future_queue.get_time_till_next_proc_enters() == 0):
             process_queue.extend(future_queue.get_and_clear_next_proc())
 
-        process_queue
         process_queue.sort_by_scheduling_algo()
         
 
