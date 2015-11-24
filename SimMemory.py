@@ -117,7 +117,8 @@ class Memory(object):
         i = 0
         while(i<self.size and self.mem[i]!=process.proc_num):
             i += 1
-        while(i<self.size and i < i+process.memory_size):
+        end_of_proc_mem = i+process.memory_size
+        while(i<self.size and i < end_of_proc_mem):
             self.mem[i] = "."
             i += 1
         self.show()
