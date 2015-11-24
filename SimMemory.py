@@ -82,9 +82,11 @@ class Memory(object):
                 j += 1
             i = j
             while(j < self.size):
-                while(i<self.size and self.mem[j]!="."):
+                while(j<self.size and self.mem[j]!="."):
                     j += 1
                     i = j
+                while(j<self.size and self.mem[j]=="."):
+                    j+=1
                 if(j-i > proc_size and j-i < open_size):
                     start_index = i
                     open_size = j-i
@@ -130,8 +132,3 @@ class Memory(object):
         for i in range(self.size/32):
             print ''.join(self.mem[32*i:32*(i+1)])
         print line
-
-    def clear(self):
-        """ Clear memory of all processes. """
-        for i in range(self.size):
-            self.mem[i] = "."
