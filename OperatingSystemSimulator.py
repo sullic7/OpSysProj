@@ -237,11 +237,11 @@ if __name__ == "__main__":
     #     print("Usage %s iuput_filename" % sys.argv[0])
 
     
-    scheduling_algorithms = ["SRT", "RR"]
-    fitting_algorithms = ['first-fit', 'next-fit', 'best-fit']
+    # scheduling_algorithms = ["SRT", "RR"]
+    # fitting_algorithms = ['first-fit', 'next-fit', 'best-fit']
     stats_file = open('simout.txt', 'w')
-    # scheduling_algorithms = ["SRT"]
-    # fitting_algorithms = ['best-fit']
+    scheduling_algorithms = ["RR"]
+    fitting_algorithms = ['best-fit']
 
     for schedule_algo in scheduling_algorithms:
         for fit_algo in fitting_algorithms:
