@@ -22,6 +22,7 @@ class SimulatorProcess:
         self.cpu_burst_time = 0
         self.turnaround_time = 0
         self.wait_time = 0
+        self.time_waiting_in_queue = 0
 
 
     def __str__(self):
@@ -97,6 +98,17 @@ class ProcessQueue(list):
         elif self.scheduling_algo == "SRT":
             self.sort(key=lambda x: x.burst_time)
 
+    def update_time(self, time_passed):
+        """IN the PWA algorithm if a proc has been waiting in the queue for
+        longer than x3 it's burst time increase it's priority by 1"""
+        for proc in self:
+            # first add the time passed to all the procs
+            proc.time_waiting_in_queue += time_passed
+            proc.wait_time += time_passed
+            proc.turnaround_time += time_passed
+
+        self.sort_by_scheduling_algo()
+
 
 class FutureProcessQueue(list):
     """ Hold a list of processes and have functions to give them
@@ -120,3 +132,11 @@ class FutureProcessQueue(list):
 
     def update_time(self, time_passed):
         self.total_time_passed += time_passed
+
+class Stats:
+    def __init__(self):
+        self.cpu_burst_times = []
+        self.turnaround_times = []
+        self.wait_times = []
+        self.ctx_switches = 0
+        self.num_bursts_total = 0
