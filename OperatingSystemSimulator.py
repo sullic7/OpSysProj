@@ -235,6 +235,7 @@ if __name__ == "__main__":
     # make sure the args are good
     if(len(sys.argv) != 2):
         print("Usage %s iuput_filename" % sys.argv[0])
+        sys.exit(0)
     input_file_name = sys.argv[1]
 
     
