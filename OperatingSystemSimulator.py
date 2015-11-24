@@ -131,7 +131,7 @@ def run_simulation(future_queue, process_queue, io_subsystem, cpu,
                 time_passed = memory.do_defrag_and_report_time()
                 time += time_passed
                 io_subsystem.update_time(time_passed)
-                future_queue.updbate_time(time_passed)
+                future_queue.update_time(time_passed)
                 process_queue.update_time(time_passed)
                 print("time %dms: Completed defragmentation (moved %d memory units)" % 
                         (time, time_passed / memory.t_memmove))
