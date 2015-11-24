@@ -9,7 +9,7 @@ class SimulatorProcess:
         # string format 
         # <proc-num>|<arrival-time>|<burst-time>|<num-burst>|<io-time>|<memory>
         values = info_string.strip().split("|")
-        self.proc_num = int(values[0])
+        self.proc_num = values[0]
         self.arrival_time = int(values[1])
         self.burst_time = int(values[2])
         self.num_bursts = int(values[3])
@@ -245,7 +245,10 @@ class Memory(object):
     def can_fit_process_without_defrag(self, new_proc):
         """ This will return True if new_proc can fit into memory without
         a defrag."""
-        pass
+        if(new_proc.memory_size>256):
+            return None
+        else:
+            return True
 
     def add_process(self, new_proc):
         """ Add a new process to memory.
@@ -253,7 +256,30 @@ class Memory(object):
         can_fit_process_without_defrag should have been called before)
         and should error out if there's a problem.
         """
-        pass
+        size = new_proc.memory_size
+        #new_proc.proc_num
+
+        if(self.fitting_algorithm=='first_fit'):
+            i = 0
+            j = 0
+            while(self.mem[i]!="."):
+                i+=1
+            j=i
+            while(i < self.size-1):
+                i+=1
+                if(self.mem[i]!="."):
+                    self.mem[j] = self.mem[i]
+                    self.mem[i] = "."
+                    j+=1
+            
+
+        if(self.fitting_algorithm=='next_fit'):
+            #need a last-used index
+            #must parse all around mem
+            pass
+
+        if(self.fitting_algorithm=='best_fit'):
+            pass
 
     def do_defrag_and_report_time(self):
         """ Defragment memory and report how long it took."""
@@ -286,20 +312,3 @@ class Memory(object):
                 self.mem[j] = self.mem[i]
                 self.mem[i] = "."
                 j+=1
-
-#add proc.mem_index
-    def run_fit_algorithm(self, proc, fit_type):
-        size = proc.memory_size
-        #proc.proc_num
-        i = 0
-        j = 0
-        while(self.mem[i]!="."):
-            i+=1
-        j=i
-
-        if(fit_type=="First"):
-            
-            
-
-        if(fit_type=="Next"):
-            size = proc.memory_size

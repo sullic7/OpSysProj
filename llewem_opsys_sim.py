@@ -3,7 +3,7 @@ import sys
 # import opsys_sim_components import feed_cpu, sort_queue_by_schedule
 # classes
 from opsys_sim_components_max import SimulatorProcess, IOSubsystem, CPU, \
-ProcessQueue, FutureProcessQueue
+ProcessQueue, FutureProcessQueue, Memory
 # this is a program to simulate a CPU and IO black box for CSCI 4210
 
 context_switch_time = 13
@@ -31,7 +31,7 @@ def get_queue_print_string(queue):
 
 def print_event(time, proc, event, queue):
     queue_string = get_queue_print_string(queue)
-    print("time %dms: P%d %s %s" % (time, proc.proc_num, event, queue_string))
+    print("time %dms: Process %s %s %s" % (time, proc.proc_num, event, queue_string))
 
 def execute_premption(time, process_queue, cpu):
     # take the proc out of the cpu and add a new one from the queue
@@ -42,7 +42,7 @@ def execute_premption(time, process_queue, cpu):
     process_queue.add_proc(old_proc)
 
     # little sketchy here for quickness
-    event_string = "preempted by P%d" % new_proc.proc_num
+    event_string = "preempted by Process %s" % new_proc.proc_num
     print_event(time, old_proc, event_string, process_queue)
 
 def check_for_premption(time, process_queue, cpu, scheduling_algo):
@@ -83,7 +83,7 @@ def run_simulation(future_queue, process_queue, io_subsystem, cpu, scheduling_al
         # now check what's going to finish next and give it attention
         time_left_on_cpu = cpu.get_time_till_next_event()
         time_left_on_io = io_subsystem.get_time_till_next_event()
-        time_till_next_new_proc = future_queue.get_time_till_next_event()
+        time_till_next_new_proc = future_queue.get_time_till_next_proc_enters()
         # print("times cpu, io, future queue", time_left_on_cpu, time_left_on_io, time_till_next_new_proc)
 
         # check if we need to add a new process
@@ -134,7 +134,7 @@ def run_simulation(future_queue, process_queue, io_subsystem, cpu, scheduling_al
                 cpu.add_process(new_proc)
                 process_queue.add_proc(old_proc)
 
-                event_string = "preempted by P%d" % new_proc.proc_num
+                event_string = "preempted by Process %s" % new_proc.proc_num
                 print_event(time, old_proc, event_string, process_queue)
 
             else:
@@ -186,17 +186,23 @@ if __name__ == "__main__":
         for fit_algo in fitting_algorithms:
             future_queue = FutureProcessQueue()
             # create a new FutureProcessQueue and add all the loaded processes to it
-            future_queue.extend(load_processes("input_file.txt"))
+            future_queue.extend(load_processes("processes.txt"))
             # future_queue.extend(load_processes(sys.argv[1]))
 
             # sort the future queue by arrivial time
-            future_queue.sort(key=lambda x: x.arrivial_time)
+            future_queue.sort(key=lambda x: x.arrival_time)
             # get all the time=0 events from the future queue into the process queue
             process_queue = ProcessQueue(schedule_algo)
             memory = Memory(fit_algo)
             while(future_queue.get_time_till_next_proc_enters() == 0):
                 next_proc = future_queue.get_and_clear_next_proc()
-                memory.add_process(proc)
+
+                if(next_proc.memory_size>256):
+                    # suspend process if memory is too large
+                    print("Process "+next_proc.proc_num+" is too large to fit in memory")
+                    # TODO: suspend process
+
+                memory.add_process(next_proc)
                 # TODO: check for errors loading the proc into memory
                 process_queue.add_proc(next_proc)
             
@@ -208,4 +214,6 @@ if __name__ == "__main__":
             io_subsystem = IOSubsystem()
             cpu = CPU(schedule_algo)
 
-            run_simulation(future_queue, process_queue, io_subsystem, cpu, algo, memory)
+            run_simulation(future_queue, process_queue, io_subsystem, cpu, schedule_algo, memory)
+            #reset memory
+            memory.clear()
