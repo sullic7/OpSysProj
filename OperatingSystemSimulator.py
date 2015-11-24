@@ -131,7 +131,7 @@ def run_simulation(future_queue, process_queue, io_subsystem, cpu,
                 time_passed = memory.do_defrag_and_report_time()
                 time += time_passed
                 io_subsystem.update_time(time_passed)
-                future_queue.updbate_time(time_passed)
+                future_queue.update_time(time_passed)
                 process_queue.update_time(time_passed)
                 print("time %dms: Completed defragmentation (moved %d memory units)" % 
                         (time, time_passed / memory.t_memmove))
@@ -233,22 +233,20 @@ def write_stats(output_file, stats, scheduling_algo, fit_algo):
 # main method
 if __name__ == "__main__":
     # make sure the args are good
-    # if(len(sys.argv) != 2):
-    #     print("Usage %s iuput_filename" % sys.argv[0])
+    if(len(sys.argv) != 2):
+        print("Usage %s iuput_filename" % sys.argv[0])
+    input_file_name = sys.argv[1]
 
     
-    # scheduling_algorithms = ["SRT", "RR"]
-    # fitting_algorithms = ['first-fit', 'next-fit', 'best-fit']
+    scheduling_algorithms = ["SRT", "RR"]
+    fitting_algorithms = ['first-fit', 'next-fit', 'best-fit']
     stats_file = open('simout.txt', 'w')
-    scheduling_algorithms = ["SRT"]
-    fitting_algorithms = ['next-fit']
 
     for schedule_algo in scheduling_algorithms:
         for fit_algo in fitting_algorithms:
             future_queue = FutureProcessQueue()
             # create a new FutureProcessQueue and add all the loaded processes to it
-            future_queue.extend(load_processes("processes.txt"))
-            # future_queue.extend(load_processes(sys.argv[1]))
+            future_queue.extend(load_processes(input_file_name))
 
             # sort the future queue by arrivial time
             future_queue.sort(key=lambda x: x.arrival_time)
@@ -257,10 +255,8 @@ if __name__ == "__main__":
             memory = Memory(fit_algo, 256, memory_move_time)
 
             stats = Stats()
-            # print("Process order for %s\n" % algo)
+            # calculate cpu burst times
             for proc in future_queue:
-            #     proc.print_self()
-                # calculate cpu burst times
                 stats.cpu_burst_times.extend([proc.burst_time] * proc.num_bursts)
 
             io_subsystem = IOSubsystem()
