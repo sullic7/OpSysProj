@@ -66,7 +66,7 @@ def run_simulation(future_queue, process_queue, io_subsystem, cpu, scheduling_al
     while ((len(process_queue) != 0) or io_subsystem.has_processes()
         or cpu.has_process()):
 
-        #first check if the CPU is empty, IT MUST BE FEED
+        #first check if the CPU is empty, IT MUST BE FED
         if (not cpu.has_process() and len(process_queue) != 0):
             # get the next process from the queue
             proc = process_queue.pop(0)
@@ -102,7 +102,7 @@ def run_simulation(future_queue, process_queue, io_subsystem, cpu, scheduling_al
                 time_passed = memory.do_defrag_and_report_time()
                 time += time_passed
                 io_subsystem.update_time(time_passed)
-                future_queue.update_time(time_passed)
+                future_queue.updbate_time(time_passed)
                 if memory.can_fit_process_without_defrag(proc):
                     process_queue.add_proc(proc)
                     memory.add_process(proc)
