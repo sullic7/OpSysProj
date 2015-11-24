@@ -126,6 +126,7 @@ def run_simulation(future_queue, process_queue, io_subsystem, cpu,
                 process_queue.add_proc(proc)
                 memory.add_process(proc)
             else:
+                print_event(time, proc, "unable to be added due to lack of memory.", process_queue)
                 print("time %dms: Starting defragmentation (Suspending all processes)" % time)
                 time_passed = memory.do_defrag_and_report_time()
                 time += time_passed
@@ -233,7 +234,7 @@ def write_stats(output_file, stats, scheduling_algo, fit_algo):
 if __name__ == "__main__":
     # make sure the args are good
     # if(len(sys.argv) != 2):
-    #     print("Usage %s filename" % sys.argv[0])
+    #     print("Usage %s iuput_filename" % sys.argv[0])
 
     
     scheduling_algorithms = ["SRT", "RR"]
