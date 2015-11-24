@@ -240,8 +240,8 @@ if __name__ == "__main__":
     # scheduling_algorithms = ["SRT", "RR"]
     # fitting_algorithms = ['first-fit', 'next-fit', 'best-fit']
     stats_file = open('simout.txt', 'w')
-    scheduling_algorithms = ["RR"]
-    fitting_algorithms = ['best-fit']
+    scheduling_algorithms = ["SRT"]
+    fitting_algorithms = ['next-fit']
 
     for schedule_algo in scheduling_algorithms:
         for fit_algo in fitting_algorithms:

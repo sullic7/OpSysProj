@@ -64,10 +64,13 @@ class CPU:
         if(self.ctx_switch_time_remaining > 0):
             return self.ctx_switch_time_remaining
         else:
-            # return the time till the burst is finished, or RR time expires
-            # whichever will happen first
-            return min(self.current_proc.burst_time_remaining, 
-                        RR_time_remaining)
+            if self.scheduling_algorithm == "RR":
+                # return the time till the burst is finished, or RR time expires
+                # whichever will happen first
+                return min(self.current_proc.burst_time_remaining, 
+                            RR_time_remaining)
+            else:
+                return self.current_proc.burst_time_remaining
 
     def update_time(self, time_passed):
         # no process means we don't care about time
