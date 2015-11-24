@@ -121,7 +121,7 @@ def run_simulation(future_queue, process_queue, io_subsystem, cpu,
 
             if memory.can_fit_process_without_defrag(proc):
                 print_event(time, proc, "added to system", process_queue)
-                print("time %ims Simulated Memory" % time)
+                print("time %ims: Simulated Memory" % time)
                 process_queue.add_proc(proc)
                 memory.add_process(proc)
             else:
@@ -131,7 +131,7 @@ def run_simulation(future_queue, process_queue, io_subsystem, cpu,
                 future_queue.updbate_time(time_passed)
                 if memory.can_fit_process_without_defrag(proc):
                     print_event(time, proc, "added to system", process_queue)
-                    print("time %ims Simulated Memory" % time)
+                    print("time %ims: Simulated Memory" % time)
                     process_queue.add_proc(proc)
                     memory.add_process(proc)
                 else:

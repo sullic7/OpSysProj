@@ -93,7 +93,7 @@ class Memory(object):
 
         for k in range(proc_size):
             self.mem[i+k] = new_proc.proc_num
-        # print self.fitting_algorithm
+        # print memory
         self.show()
 
     def do_defrag_and_report_time(self):
@@ -120,6 +120,7 @@ class Memory(object):
         while(i<self.size and i < i+process.memory_size):
             self.mem[i] = "."
             i += 1
+        self.show()
 
     def show(self):
         line = '=' * 32
