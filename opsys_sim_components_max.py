@@ -26,9 +26,9 @@ class SimulatorProcess:
         self.wait_time = 0
 
 
-    def print_self(self):
-        print("<proc-num> %d, <burst-time> %d, <num-burst> %d, <io-time> %d, <bursts_compl> %d" % 
-            (self.proc_num, self.burst_time, self.num_bursts, self.io_time, self.bursts_compleated))
+    def __str__(self):
+        return ("<proc-num> %c, <arrival-time>%d, <burst-time> %d, <num-burst> %d, <io-time> %d, <memory> %d, <bursts_compl> %d, <burst_time_compl> %d" % 
+            (self.proc_num, self.arrival_time, self.burst_time, self.num_bursts, self.io_time, self.memory_size, self.bursts_compleated, self.burst_time_remaining))
 
 class IOSubsystem:
     """This class represents the IO subsystem. It takes processes and 
@@ -110,7 +110,7 @@ class CPU:
         # if we are going to finish a CPU burst before the RR time slice
         # expires we want to return false, otherwise if the next CPU related
         # thing to happen will be finishing a RR time slice return true.
-        return self.current_proc.burst_time_remaining < RR_time_left
+        return self.current_proc.burst_time_remaining > RR_time_left
 
     def time_till_round_robin_done(self):
         return self.round_robin_time_slice - self.time_elapased_in_RR
@@ -190,6 +190,10 @@ class CPU:
         proc.bursts_compleated += 1
         proc.burst_time_remaining = proc.burst_time
         return proc
+
+    def give_new_RR_timeslice(self):
+        self.time_elapased_in_RR = 0
+        self.current_proc.burst_time_remaining -= self.round_robin_time_slice
 
 
 class ProcessQueue(list):
@@ -291,44 +295,44 @@ class Memory(object):
             count = 0
             start_index = 10 #self.prev_proc
             
-            i=start_index
-            j=start_index
+            i = start_index
+            j = start_index
             while(j<self.size and self.mem[j]!="."):
-                j+=1
-            i=j
+                j += 1
+            i = j
             while(count<=256):
                 while(i<self.size and self.mem[j]!="."):
                     j+=1
                     i=j
-                if(j-i > proc_size):
+                if( j-i > proc_size):
                     break
                 count+=1
-                if(j+1==self.size and count<256):
-                    i=0
-                    j=0
+                if( j+1 == self.size and count<256):
+                    i = 0
+                    j = 0
                 else:
-                    j+=1
+                    j += 1
             # must parse all around mem
 
         elif(self.fitting_algorithm=='best-fit'):
             start_index = 0
             open_size = 256
             while(j<self.size and self.mem[j]!="."):
-                j+=1
-            i=j
+                j += 1
+            i = j
             while(j < self.size):
                 while(i<self.size and self.mem[j]!="."):
-                    j+=1
-                    i=j
+                    j += 1
+                    i = j
                 if(j-i > proc_size and j-i < open_size):
                     start_index = i
                     open_size = j-i
-                j+=1
+                j += 1
             i = start_index
 
         for k in range(proc_size):
             self.mem[i+k] = new_proc.proc_num
-        print self.fitting_algorithm
+        # print self.fitting_algorithm
         self.show()
 
     def do_defrag_and_report_time(self):
@@ -336,25 +340,25 @@ class Memory(object):
         i = 0
         j = 0
         while(i<self.size and self.mem[i]=="."):
-            i+=1
+            i += 1
         units_moved = 0
         while(i < self.size-1):
             i+=1
-            if(self.mem[i]!="."):
+            if(self.mem[i] != "."):
                 self.mem[j] = self.mem[i]
                 self.mem[i] = "."
                 units_moved += 1
-                j+=1
+                j += 1
         return self.t_memmove * units_moved
 
     def remove_process(self, process):
         """ Remove the given process from memory. """
         i = 0
         while(i<self.size and self.mem[i]!=process.proc_num):
-            i+=1
+            i += 1
         while(i<self.size and i < i+process.memory_size):
             self.mem[i] = "."
-            i+=1
+            i += 1
 
     def show(self):
         line = '=' * 32

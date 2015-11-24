@@ -56,15 +56,23 @@ def check_for_premption(time, process_queue, cpu, scheduling_algo):
 
     return False
 
+def print_the_bullshit(time_left_on_cpu, time_left_on_io, time_till_next_new_proc):
+    # make some temp vars to deal with possible None values
+    time_left_on_cpu2 = time_left_on_cpu if time_left_on_cpu is not None else -1
+    time_left_on_io2 = time_left_on_io if time_left_on_io is not None else -1
+    time_till_next_new_proc2 = time_till_next_new_proc if time_till_next_new_proc is not None else -1
+    print("--time cpu %d, time io %d, future queue %d" %
+            (time_left_on_cpu2, time_left_on_io2, time_till_next_new_proc2))
 
-def run_simulation(future_queue, process_queue, io_subsystem, cpu, scheduling_algo, memory):
+def run_simulation(future_queue, process_queue, io_subsystem, cpu,
+                    scheduling_algo, memory, fit_algo):
     time = 0
-    print("time 0ms: Simulator started for %s %s" % 
-        (scheduling_algo, get_queue_print_string(process_queue)))
+    print("time 0ms: Simulator started for %s and %s %s" % 
+        (scheduling_algo, fit_algo, get_queue_print_string(process_queue)))
 
     # keep going while there's processes kicking about
-    while ((len(process_queue) != 0) or io_subsystem.has_processes()
-        or cpu.has_process()):
+    while (len(process_queue) != 0 or io_subsystem.has_processes()
+        or cpu.has_process() or len(future_queue) != 0):
 
         #first check if the CPU is empty, IT MUST BE FED
         if (not cpu.has_process() and len(process_queue) != 0):
@@ -84,18 +92,25 @@ def run_simulation(future_queue, process_queue, io_subsystem, cpu, scheduling_al
         time_left_on_cpu = cpu.get_time_till_next_event()
         time_left_on_io = io_subsystem.get_time_till_next_event()
         time_till_next_new_proc = future_queue.get_time_till_next_proc_enters()
-        # print("times cpu, io, future queue", time_left_on_cpu, time_left_on_io, time_till_next_new_proc)
+        # make some dummy vars to print the bullshit
+        # print_the_bullshit(time_left_on_cpu, time_left_on_io, time_till_next_new_proc)
 
         # check if we need to add a new process
         if (time_till_next_new_proc is not None and
             (time_left_on_cpu is None or time_till_next_new_proc < time_left_on_cpu) and
             (time_left_on_io is None or time_till_next_new_proc < time_left_on_io)):
-            # TODO: add entering a process into memory and the process queue here
-            # if a new proc is entering and requires defrag update
+            print("getting a proc from the future queue")
+            time_passed = time_till_next_new_proc
+            time += time_passed
+            io_subsystem.update_time(time_passed)
+            future_queue.update_time(time_passed)
+            cpu.update_time(time_passed)
+
             proc = future_queue.get_and_clear_next_proc()
-            # process_queue.add_proc(proc) # for now ignore memory for testing
 
             if memory.can_fit_process_without_defrag(proc):
+                print_event(time, proc, "added to system", process_queue)
+                print("time %ims Simulated Memory" % time)
                 process_queue.add_proc(proc)
                 memory.add_process(proc)
             else:
@@ -104,6 +119,8 @@ def run_simulation(future_queue, process_queue, io_subsystem, cpu, scheduling_al
                 io_subsystem.update_time(time_passed)
                 future_queue.updbate_time(time_passed)
                 if memory.can_fit_process_without_defrag(proc):
+                    print_event(time, proc, "added to system", process_queue)
+                    print("time %ims Simulated Memory" % time)
                     process_queue.add_proc(proc)
                     memory.add_process(proc)
                 else:
@@ -126,24 +143,32 @@ def run_simulation(future_queue, process_queue, io_subsystem, cpu, scheduling_al
                 print_event(time, proc, "started using the CPU", process_queue)
 
             elif(cpu.finishing_round_robin()):
-                # CPU is finishing round robbin
-                # preempt the proc in the cpu with the next one on the queue
-                # then put the process back into the queue
-                old_proc = cpu.finish_round_robin()
-                new_proc = process_queue.pop(0)
-                cpu.add_process(new_proc)
-                process_queue.add_proc(old_proc)
+                # if there are no more procs on the queue we don't preempty
+                if len(process_queue) > 0:
+                    # CPU is finishing round robbin
+                    # preempt the proc in the cpu with the next one on the queue
+                    # then put the process back into the queue
+                    old_proc = cpu.finish_round_robin()
+                    new_proc = process_queue.pop(0)
+                    cpu.add_process(new_proc)
+                    process_queue.add_proc(old_proc)
 
-                event_string = "preempted by Process %s" % new_proc.proc_num
-                print_event(time, old_proc, event_string, process_queue)
+                    event_string = "preempted by Process %s" % new_proc.proc_num
+                    print_event(time, old_proc, event_string, process_queue)
+                else:
+                    proc = cpu.get_current_process()
+                    print_event(time, old_proc, """is getting a new time slice.""", process_queue)
+                    cpu.give_new_RR_timeslice()
 
             else:
+                print("finishing proc normally")
                 # cpu is ready now to feed io a process
                 proc = cpu.get_and_clear_process()
                 # and feed it to IO if needed
                 if proc.io_time != 0 and proc.bursts_compleated < proc.num_bursts:
                     # print the event
                     print_event(time, proc, "completed its CPU burst", process_queue)
+                    print(proc)
                     print_event(time, proc, "performing I/O", process_queue)
                     io_subsystem.add_process(proc)
                 else:
@@ -179,8 +204,10 @@ if __name__ == "__main__":
     #     print("Usage %s filename" % sys.argv[0])
 
     
-    scheduling_algorithms = ["SRT", "RR"]
-    fitting_algorithms = ['first-fit', 'next-fit', 'best-fit']
+    # scheduling_algorithms = ["SRT", "RR"]
+    # fitting_algorithms = ['first-fit', 'next-fit', 'best-fit']
+    scheduling_algorithms = ["RR"]
+    fitting_algorithms = ['first-fit']
 
     for schedule_algo in scheduling_algorithms:
         for fit_algo in fitting_algorithms:
@@ -194,18 +221,6 @@ if __name__ == "__main__":
             # get all the time=0 events from the future queue into the process queue
             process_queue = ProcessQueue(schedule_algo)
             memory = Memory(fit_algo)
-            while(future_queue.get_time_till_next_proc_enters() == 0):
-                next_proc = future_queue.get_and_clear_next_proc()
-
-                if(next_proc.memory_size>256):
-                    # suspend process if memory is too large
-                    print("Process "+next_proc.proc_num+" is too large to fit in memory")
-                    # TODO: suspend process
-
-                memory.add_process(next_proc)
-                # TODO: check for errors loading the proc into memory
-                process_queue.add_proc(next_proc)
-            
 
             # print("Process order for %s\n" % algo)
             # for proc in process_queue:
@@ -214,6 +229,7 @@ if __name__ == "__main__":
             io_subsystem = IOSubsystem()
             cpu = CPU(schedule_algo)
 
-            run_simulation(future_queue, process_queue, io_subsystem, cpu, schedule_algo, memory)
+            run_simulation(future_queue, process_queue, io_subsystem, cpu,
+                            schedule_algo, memory, fit_algo)
             #reset memory
             memory.clear()
