@@ -61,14 +61,14 @@ class Memory(object):
             while(j<self.size and self.mem[j]!="."):
                 j += 1
             i = j
-            while(count<=256):
+            while(count<=self.size):
                 while(i<self.size and self.mem[j]!="."):
                     j+=1
                     i=j
                 if( j-i > proc_size):
                     break
                 count+=1
-                if( j+1 == self.size and count<256):
+                if( j+1 == self.size and count<self.size):
                     i = 0
                     j = 0
                 else:
@@ -77,7 +77,7 @@ class Memory(object):
 
         elif(self.fitting_algorithm=='best-fit'):
             start_index = 0
-            open_size = 256
+            open_size = self.size
             while(j<self.size and self.mem[j]!="."):
                 j += 1
             i = j
