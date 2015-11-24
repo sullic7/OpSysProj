@@ -3,6 +3,7 @@ class Memory(object):
         self.fitting_algorithm = fitting_algorithm
         self.size = size
         self.t_memmove = memory_move_time
+        self.prev_proc_index = 0
         self.mem = []
         for i in range(self.size):
             self.mem.append(".")
@@ -52,9 +53,8 @@ class Memory(object):
                 j+=1
 
         elif(self.fitting_algorithm=='next-fit'):
-            # TODO: need a last-used index
             count = 0
-            start_index = 10 #self.prev_proc
+            start_index = self.prev_proc_index
             
             i = start_index
             j = start_index
@@ -73,7 +73,7 @@ class Memory(object):
                     j = 0
                 else:
                     j += 1
-            # must parse all around mem
+            self.prev_proc_index = i+proc_size
 
         elif(self.fitting_algorithm=='best-fit'):
             start_index = 0
