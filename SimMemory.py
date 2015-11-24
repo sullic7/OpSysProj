@@ -124,6 +124,7 @@ class Memory(object):
         self.show()
 
     def show(self):
+        """ Print current memory. """
         line = '=' * 32
         print line
         for i in range(self.size/32):
@@ -131,5 +132,6 @@ class Memory(object):
         print line
 
     def clear(self):
+        """ Clear memory of all processes. """
         for i in range(self.size):
             self.mem[i] = "."
