@@ -1,3 +1,7 @@
+# Authors:
+# Max Llewellyn
+# Caroline Sullivan
+
 class SimulatorProcess:
     """This class holds info about a process. How long it wants for CPU
     bursts, how long each burst is and how long it takes to do IO."""

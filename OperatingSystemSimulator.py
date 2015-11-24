@@ -1,3 +1,7 @@
+# Authors:
+# Max Llewellyn
+# Caroline Sullivan
+
 import sys
 from SimSmallStuff import SimulatorProcess, IOSubsystem, ProcessQueue, \
 FutureProcessQueue, Stats

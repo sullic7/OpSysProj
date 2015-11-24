@@ -1,3 +1,7 @@
+# Authors:
+# Max Llewellyn
+# Caroline Sullivan
+
 class Memory(object):
     def __init__(self, fitting_algorithm, size, memory_move_time):
         self.fitting_algorithm = fitting_algorithm

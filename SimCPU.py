@@ -1,3 +1,7 @@
+# Authors:
+# Max Llewellyn
+# Caroline Sullivan
+
 class CPU:
     """This class represents the CPU. It holds a process and will feed it
     to the IOSubsystem when it's done."""
