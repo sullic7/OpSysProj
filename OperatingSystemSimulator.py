@@ -1,6 +1,6 @@
 import sys
 from SimSmallStuff import SimulatorProcess, IOSubsystem, ProcessQueue, \
-FutureProcessQueue
+FutureProcessQueue, Stats
 from SimMemory import Memory
 from SimCPU import CPU
 
@@ -72,7 +72,7 @@ def print_debugging_times(time_left_on_cpu, time_left_on_io, time_till_next_new_
             (time_left_on_cpu2, time_left_on_io2, time_till_next_new_proc2))
 
 def run_simulation(future_queue, process_queue, io_subsystem, cpu,
-                    scheduling_algo, memory, fit_algo):
+                    scheduling_algo, memory, fit_algo, stats):
     time = 0
     if schedule_algo != "RR":
         print("time 0ms: Simulator started for %s and %s %s" % 
@@ -89,6 +89,7 @@ def run_simulation(future_queue, process_queue, io_subsystem, cpu,
         if (not cpu.has_process() and len(process_queue) != 0):
             # get the next process from the queue
             proc = process_queue.pop(0)
+            stats.wait_times.append(proc.wait_time)
             # and feed it to the cpu
             cpu.add_process(proc)
 
@@ -114,6 +115,7 @@ def run_simulation(future_queue, process_queue, io_subsystem, cpu,
             time += time_passed
             io_subsystem.update_time(time_passed)
             future_queue.update_time(time_passed)
+            process_queue.update_time(time_passed)
             cpu.update_time(time_passed)
 
             proc = future_queue.get_and_clear_next_proc()
@@ -129,6 +131,7 @@ def run_simulation(future_queue, process_queue, io_subsystem, cpu,
                 time += time_passed
                 io_subsystem.update_time(time_passed)
                 future_queue.updbate_time(time_passed)
+                process_queue.update_time(time_passed)
                 print("time %dms: Completed defragmentation (moved %d memory units)" % 
                         (time, time_passed / memory.t_memmove))
                 if memory.can_fit_process_without_defrag(proc):
@@ -149,10 +152,12 @@ def run_simulation(future_queue, process_queue, io_subsystem, cpu,
             time += time_passed
             io_subsystem.update_time(time_passed)
             future_queue.update_time(time_passed)
+            process_queue.update_time(time_passed)
 
             # cpu is done first either finish a ctx switch or dump to IO
             if(cpu.in_ctx_switch()):
                 proc = cpu.finish_ctx_switch()
+                stats.ctx_switches += 1
                 print_event(time, proc, "started using the CPU", process_queue)
 
             elif(cpu.finishing_round_robin()):
@@ -180,6 +185,8 @@ def run_simulation(future_queue, process_queue, io_subsystem, cpu,
                 if proc.io_time != 0 and proc.bursts_compleated < proc.num_bursts:
                     # print the event
                     print_event(time, proc, "completed its CPU burst", process_queue)
+                    stats.turnaround_times.append(proc.turnaround_time + time_passed)
+                    proc.turnaround_time = 0
                     print_event(time, proc, "performing I/O", process_queue)
                     io_subsystem.add_process(proc)
                 else:
@@ -187,6 +194,7 @@ def run_simulation(future_queue, process_queue, io_subsystem, cpu,
                     print_event(time, proc, "terminated", process_queue)
                     print("time %dms Simulated Memory" % time)
                     memory.remove_process(proc)
+                    stats.turnaround_times.append(proc.turnaround_time + time_passed)
 
         elif(time_left_on_io is not None):
             time_passed = time_left_on_io
@@ -194,6 +202,7 @@ def run_simulation(future_queue, process_queue, io_subsystem, cpu,
             cpu.update_time(time_passed)
             io_subsystem.update_time(time_passed)
             future_queue.update_time(time_passed)
+            process_queue.update_time(time_passed)
             # io is done now so feed the queue
             proc = io_subsystem.get_and_clear_next_process()
             # feed the proc back to the process_queue if needed
@@ -207,7 +216,18 @@ def run_simulation(future_queue, process_queue, io_subsystem, cpu,
 
     print("time %dms: Simulator for %s ended\n\n" % (time, scheduling_algo))
 
+def write_stats(output_file, stats, scheduling_algo, fit_algo):
+    burst_average = sum(stats.cpu_burst_times) / float(len(stats.cpu_burst_times))
+    wait_average = sum(stats.wait_times) / float(len(stats.wait_times))
+    turnaround_average = sum(stats.turnaround_times) / float(len(stats.turnaround_times))
 
+    output = "Scheduling algorithm %s and fitting algorithm %s\n" % (scheduling_algo, fit_algo)
+    output += "-- average CPU burst time: %3.2f ms\n" % burst_average
+    output += "-- average wait time: %3.2f ms\n" % wait_average
+    output += "-- average turnaround time: %3.2f ms\n" % turnaround_average
+    output += "-- total number of context switches: %d\n" % stats.ctx_switches
+    output += "\n\n"
+    output_file.write(output)
 
 # main method
 if __name__ == "__main__":
@@ -216,10 +236,11 @@ if __name__ == "__main__":
     #     print("Usage %s filename" % sys.argv[0])
 
     
-    # scheduling_algorithms = ["SRT", "RR"]
-    # fitting_algorithms = ['first-fit', 'next-fit', 'best-fit']
-    scheduling_algorithms = ["SRT"]
-    fitting_algorithms = ['best-fit']
+    scheduling_algorithms = ["SRT", "RR"]
+    fitting_algorithms = ['first-fit', 'next-fit', 'best-fit']
+    stats_file = open('simout.txt', 'w')
+    # scheduling_algorithms = ["SRT"]
+    # fitting_algorithms = ['best-fit']
 
     for schedule_algo in scheduling_algorithms:
         for fit_algo in fitting_algorithms:
@@ -234,12 +255,16 @@ if __name__ == "__main__":
             process_queue = ProcessQueue(schedule_algo)
             memory = Memory(fit_algo, 256, memory_move_time)
 
+            stats = Stats()
             # print("Process order for %s\n" % algo)
-            # for proc in process_queue:
+            for proc in future_queue:
             #     proc.print_self()
+                # calculate cpu burst times
+                stats.cpu_burst_times.extend([proc.burst_time] * proc.num_bursts)
 
             io_subsystem = IOSubsystem()
             cpu = CPU(schedule_algo, context_switch_time, round_robin_time_slice)
 
             run_simulation(future_queue, process_queue, io_subsystem, cpu,
-                            schedule_algo, memory, fit_algo)
+                            schedule_algo, memory, fit_algo, stats)
+            write_stats(stats_file, stats, schedule_algo, fit_algo)
