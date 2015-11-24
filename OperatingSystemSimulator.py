@@ -110,7 +110,6 @@ def run_simulation(future_queue, process_queue, io_subsystem, cpu,
         if (time_till_next_new_proc is not None and
             (time_left_on_cpu is None or time_till_next_new_proc < time_left_on_cpu) and
             (time_left_on_io is None or time_till_next_new_proc < time_left_on_io)):
-            print("getting a proc from the future queue")
             time_passed = time_till_next_new_proc
             time += time_passed
             io_subsystem.update_time(time_passed)
@@ -121,14 +120,17 @@ def run_simulation(future_queue, process_queue, io_subsystem, cpu,
 
             if memory.can_fit_process_without_defrag(proc):
                 print_event(time, proc, "added to system", process_queue)
-                print("time %ims: Simulated Memory" % time)
+                print("time %dms Simulated Memory" % time)
                 process_queue.add_proc(proc)
                 memory.add_process(proc)
             else:
+                print("time %dms: Starting defragmentation (Suspending all processes)" % time)
                 time_passed = memory.do_defrag_and_report_time()
                 time += time_passed
                 io_subsystem.update_time(time_passed)
                 future_queue.updbate_time(time_passed)
+                print("time %dms: Completed defragmentation (moved %d memory units)" % 
+                        (time, time_passed / memory.t_memmove))
                 if memory.can_fit_process_without_defrag(proc):
                     print_event(time, proc, "added to system", process_queue)
                     print("time %ims: Simulated Memory" % time)
@@ -172,19 +174,18 @@ def run_simulation(future_queue, process_queue, io_subsystem, cpu,
                     cpu.give_new_RR_timeslice()
 
             else:
-                print("finishing proc normally")
                 # cpu is ready now to feed io a process
                 proc = cpu.get_and_clear_process()
                 # and feed it to IO if needed
                 if proc.io_time != 0 and proc.bursts_compleated < proc.num_bursts:
                     # print the event
                     print_event(time, proc, "completed its CPU burst", process_queue)
-                    print(proc)
                     print_event(time, proc, "performing I/O", process_queue)
                     io_subsystem.add_process(proc)
                 else:
                     # this process terminates now without IO
                     print_event(time, proc, "terminated", process_queue)
+                    print("time %dms Simulated Memory" % time)
                     memory.remove_process(proc)
 
         elif(time_left_on_io is not None):
@@ -217,7 +218,7 @@ if __name__ == "__main__":
     
     # scheduling_algorithms = ["SRT", "RR"]
     # fitting_algorithms = ['first-fit', 'next-fit', 'best-fit']
-    scheduling_algorithms = ["RR"]
+    scheduling_algorithms = ["SRT"]
     fitting_algorithms = ['best-fit']
 
     for schedule_algo in scheduling_algorithms:
